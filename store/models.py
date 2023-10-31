@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.validators import MinLengthValidator
 from Shopify.settings import AUTH_USER_MODEL
+from decimal import Decimal
+from django.utils import timezone
 
 
 class Customer(models.Model):
@@ -78,3 +80,47 @@ class Collection(models.Model):
 
     class Meta:
         ordering = ['title']
+
+
+class Product(models.Model):
+    title = models.CharField(
+        max_length=255, validators=[MinLengthValidator(3)]
+    )
+    slug = models.SlugField()
+    description = models.TextField()
+    price = models.DecimalField(max_digits=6, decimal_places=2)
+    last_update = models.DateTimeField(auto_now_add=True)
+    promotions = models.ManyToManyField(Promotion, blank=True)
+    collection = models.ForeignKey(
+        Collection, on_delete=models.PROTECT, related_name='product')
+    is_digital = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return self.title
+
+    @property
+    def new_price(self):
+        now = timezone.now()
+        if self.promotions.exists():
+            if (
+                product_promotion := self.promotions.filter(
+                    start_date__lte=now, end_date__gte=now
+                )
+                .order_by('-discount')
+                .first()
+            ):
+                return self.price * Decimal(1 - product_promotion.discount)
+
+        if self.collection and self.collection.promotion:
+            collection_promotion = self.collection.promotion
+            if collection_promotion.start_date <= now and collection_promotion.end_date >= now:
+                return self.price * Decimal(1 - collection_promotion.discount)
+
+        return self.price
+
+    class Meta:
+        ordering = ['title', 'price']
+        indexes = [
+            models.Index(fields=['title', 'slug']),
+            models.Index(fields=['price', 'title'])
+        ]
