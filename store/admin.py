@@ -52,6 +52,30 @@ class PromotionAdmin(admin.ModelAdmin):
     list_per_page = 10
 
 
+@admin.register(models.Collection)
+class CollectionAdmin(admin.ModelAdmin):
+    prepopulated_fields = {
+        'slug': ['title']
+    }
+    autocomplete_fields = ['promotion', 'featured_product']
+    search_fields = ['title__istartswith']
+    list_display = ['id', 'title', 'featured_product',
+                    'products_count', ]
+    list_per_page = 10
+
+    def products_count(self, collection: models.Collection):
+        url = reverse('admin:store_product_changelist') + '?' + urlencode({
+            'collection_id': str(collection.id)
+        })
+
+        return format_html('<a href={}>{}</a>', url, collection.products_count)
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet[Any]:
+        return super().get_queryset(request).annotate(
+            products_count=Count('product')
+        )
+
+
 class InventoryFilter(admin.SimpleListFilter):
     title = 'inventory status'
     parameter_name = 'inventory status'
