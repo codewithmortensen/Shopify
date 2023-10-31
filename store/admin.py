@@ -38,3 +38,13 @@ class CustomerAdmin(admin.ModelAdmin):
         return super().get_queryset(request).annotate(
             order_count=Count('orders')
         )
+
+
+@admin.register(models.Promotion)
+class PromotionAdmin(admin.ModelAdmin):
+    prepopulated_fields = {
+        'slug': ['title']
+    }
+    search_fields = ['title__istartswith']
+    list_display = ['id', 'title', 'discount', 'start_date', 'end_date']
+    list_per_page = 10
