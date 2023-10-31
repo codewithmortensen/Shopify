@@ -3,6 +3,7 @@ from django.core.validators import MinLengthValidator, MinValueValidator
 from Shopify.settings import AUTH_USER_MODEL
 from decimal import Decimal
 from django.utils import timezone
+from uuid import uuid4
 
 
 class Customer(models.Model):
@@ -176,3 +177,22 @@ class Review(models.Model):
         indexes = [
             models.Index(fields=['product', 'customer', 'rating']),
         ]
+
+
+class Cart(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return 'Cart'
+
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(
+        Cart, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='item')
+    quantity = models.PositiveSmallIntegerField()
+
+    def __str__(self) -> str:
+        return f'{self.product.title - {self.quantity}}'
