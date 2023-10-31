@@ -32,7 +32,7 @@ class CustomerAdmin(admin.ModelAdmin):
     @admin.display(ordering='order_count')
     def order_count(self, customer: models.Customer):
         url = reverse('admin:store_order_changelist') + '?' + urlencode({
-            'customer_id': str(customer.id)
+            'customer_id': str(customer.customer_id)
         })
         return format_html('<a href={}>{}</a>', url, customer.order_count)
 
