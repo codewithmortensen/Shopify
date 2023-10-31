@@ -26,7 +26,7 @@ class Customer(models.Model):
         max_length=1, choices=membership_status, default=membership_bronze)
 
     def __str__(self) -> str:
-        return f'{self.first_name} {self.last_name}'
+        return f'{self.customer.first_name} {self.customer.last_name}'
 
     @admin.display(ordering='customer__first_name')
     def first_name(self):
