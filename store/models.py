@@ -142,3 +142,37 @@ class Stock(models.Model):
             models.Index(fields=['quantity_in_stock', 'threshold']),
             models.Index(fields=['product', 'quantity_in_stock'])
         ]
+
+
+class Review(models.Model):
+    customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, related_name='reviews')
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='reviews')
+
+    rating_choices = [
+        ('1', 'very bad'),
+        ('1.5', 'bad'),
+        ('2', 'not good'),
+        ('2.5', 'below average'),
+        ('3', 'average'),
+        ('3.5', 'decent'),
+        ('4', 'good'),
+        ('4.5', 'very good'),
+        ('5', 'excellent')
+    ]
+
+    rating = models.CharField(max_length=3, choices=rating_choices)
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_updated = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.rating
+
+    class Meta:
+        ordering = ['created_at', 'is_updated', 'updated_at']
+        indexes = [
+            models.Index(fields=['product', 'customer', 'rating']),
+        ]
