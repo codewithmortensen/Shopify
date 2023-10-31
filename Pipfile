@@ -7,6 +7,12 @@ name = "pypi"
 django = "*"
 install = "*"
 django-debug-toolbar = "*"
+djoser = "*"
+djangorestframework-simplejwt = "*"
+djangorestframework = "*"
+markdown = "*"
+django-filter = "*"
+setuptools = "*"
 
 [dev-packages]
 
