@@ -196,3 +196,38 @@ class CartItem(models.Model):
 
     def __str__(self) -> str:
         return f'{self.product.title - {self.quantity}}'
+
+
+class Order(models.Model):
+    placed_at = models.DateTimeField(auto_now_add=True)
+
+    status_fail = 'F'
+    status_complete = 'C'
+    status_pending = 'P'
+
+    payment_status_choices = [
+        (status_fail, 'Failed'),
+        (status_complete, 'Complete'),
+        (status_pending, 'Pending')
+    ]
+
+    status_delivered = 'D'
+    status_shipped = 'S'
+
+    order_status_choices = [
+        (status_pending, 'Pending'),
+        (status_shipped, 'Shipped'),
+        (status_delivered, 'Delivered'),
+        (status_complete, 'Picked Up')
+    ]
+
+    order_status = models.CharField(
+        max_length=1, choices=order_status_choices, default=status_pending)
+
+    payment_status = models.CharField(
+        max_length=1, choices=payment_status_choices, default=status_pending)
+    customer = models.ForeignKey(
+        Customer, on_delete=models.PROTECT, related_name='orders')
+
+    def __str__(self) -> str:
+        return f'{self.order_status} - {self.customer}'
