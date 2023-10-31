@@ -26,3 +26,16 @@ class Customer(models.Model):
 
     class Meta:
         ordering = ['customer__first_name', 'customer__last_name']
+
+
+class Address(models.Model):
+    city = models.CharField(max_length=255, validators=[MinLengthValidator(3)])
+    street = models.CharField(
+        max_length=255,
+        validators=[MinLengthValidator(3)]
+    )
+    customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, related_name='address')
+
+    def __str__(self) -> str:
+        return f'{self.street} - {self.city}'
