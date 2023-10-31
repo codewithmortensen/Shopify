@@ -1,5 +1,5 @@
 from django.db import models
-from django.core.validators import MinLengthValidator
+from django.core.validators import MinLengthValidator, MinValueValidator
 from Shopify.settings import AUTH_USER_MODEL
 from decimal import Decimal
 from django.utils import timezone
@@ -123,4 +123,22 @@ class Product(models.Model):
         indexes = [
             models.Index(fields=['title', 'slug']),
             models.Index(fields=['price', 'title'])
+        ]
+
+
+class Stock(models.Model):
+    product = models.OneToOneField(
+        Product, on_delete=models.PROTECT, related_name='stock', primary_key=True)
+    quantity_in_stock = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)])
+    threshold = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+
+    def __str__(self) -> str:
+        return f'{self.product.title} - {self.quantity_in_stock}'
+
+    class Meta:
+        ordering = ['quantity_in_stock']
+        indexes = [
+            models.Index(fields=['quantity_in_stock', 'threshold']),
+            models.Index(fields=['product', 'quantity_in_stock'])
         ]
