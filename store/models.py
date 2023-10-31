@@ -231,3 +231,24 @@ class Order(models.Model):
 
     def __str__(self) -> str:
         return f'{self.order_status} - {self.customer}'
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(
+        Order, on_delete=models.PROTECT, related_name='item')
+    product = models.ForeignKey(
+        Product, on_delete=models.PROTECT, related_name='items')
+    unit_price = models.DecimalField(
+        max_digits=6, decimal_places=2, validators=[MinValueValidator(0.1)])
+    quantity = models.PositiveIntegerField()
+
+    def __str__(self) -> str:
+        return f'{self.product.title} - {self.quantity}'
+
+    class Meta:
+        ordering = ['quantity', 'unit_price']
+
+        indexes = [
+            models.Index(fields=['order', 'product']),
+            models.Index(fields=['quantity', 'unit_price'])
+        ]
