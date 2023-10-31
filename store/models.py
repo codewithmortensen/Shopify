@@ -70,8 +70,8 @@ class Collection(models.Model):
         max_length=255, validators=[MinLengthValidator(3)]
     )
     slug = models.SlugField()
-    # featured_product = models.ForeignKey(
-    #     "Product", on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    featured_product = models.ForeignKey(
+        "Product", on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     promotion = models.ForeignKey(
         Promotion, on_delete=models.SET_NULL, related_name='collection', null=True, blank=True)
 
