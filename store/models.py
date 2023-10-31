@@ -3,6 +3,7 @@ from django.core.validators import MinLengthValidator, MinValueValidator
 from Shopify.settings import AUTH_USER_MODEL
 from decimal import Decimal
 from django.utils import timezone
+from django.contrib import admin
 from uuid import uuid4
 
 
@@ -26,6 +27,18 @@ class Customer(models.Model):
 
     def __str__(self) -> str:
         return f'{self.first_name} {self.last_name}'
+
+    @admin.display(ordering='customer__first_name')
+    def first_name(self):
+        return self.customer.first_name
+
+    @admin.display(ordering='customer__last_name')
+    def last_name(self):
+        return self.customer.last_name
+
+    @admin.display(ordering='customer__email')
+    def email(self):
+        return self.customer.email
 
     class Meta:
         ordering = ['customer__first_name', 'customer__last_name']
