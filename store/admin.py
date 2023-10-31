@@ -186,3 +186,17 @@ class OrderAdmin(admin.ModelAdmin):
         message = f'you have successfully mark {
             updated_count} {placeholder} as complete'
         self.message_user(request, message)
+
+
+class CartItemAdminInline(admin.TabularInline):
+    autocomplete_fields = ['product']
+    model = models.CartItem
+    min_num = 1
+    extra = 0
+
+
+@admin.register(models.Cart)
+class CartAdmin(admin.ModelAdmin):
+    list_display = ['id', 'created_at']
+    list_per_page = 10
+    inlines = [CartItemAdminInline]
