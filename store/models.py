@@ -61,3 +61,20 @@ class Promotion(models.Model):
             models.Index(fields=['title', 'discount']),
             models.Index(fields=['start_date', 'end_date'])
         ]
+
+
+class Collection(models.Model):
+    title = models.CharField(
+        max_length=255, validators=[MinLengthValidator(3)]
+    )
+    slug = models.SlugField()
+    # featured_product = models.ForeignKey(
+    #     "Product", on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    promotion = models.ForeignKey(
+        Promotion, on_delete=models.SET_NULL, related_name='collection', null=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.title
+
+    class Meta:
+        ordering = ['title']
