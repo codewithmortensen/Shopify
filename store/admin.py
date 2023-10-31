@@ -132,3 +132,28 @@ class ReviewsAdmin(admin.ModelAdmin):
     list_display = ['id', 'customer', 'product', 'rating', 'is_updated']
     list_filter = ['rating', 'created_at', 'updated_at', 'is_updated']
     list_per_page = 10
+
+
+@admin.register(models.Stock)
+class StockAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['product']
+    search_fields = ['product__title__istartswith']
+    actions = ['clear_inventory']
+    list_display = [
+        'product_id', 'product', 'quantity_in_stock',
+        'inventory_status'
+    ]
+    list_per_page = 10
+
+    @admin.display(ordering='inventory_status')
+    def inventory_status(self, stock: models.Stock):
+        if stock.quantity_in_stock > stock.threshold:
+            return 'Ok'
+        return 'low'
+
+    @admin.action(description='clear stock')
+    def clear_inventory(self, request, queryset):
+        updated_count = queryset.update(quantity_in_stock=0)
+        message = f'you have successfully updated {
+            updated_count} product stock '
+        self.message_user(request, message)
