@@ -119,3 +119,16 @@ class ProductAdmin(admin.ModelAdmin):
         if product.stock.quantity_in_stock > product.stock.threshold:
             return 'Ok'
         return 'Low'
+
+
+@admin.register(models.Review)
+class ReviewsAdmin(admin.ModelAdmin):
+    search_fields = [
+        'customer__first_name__istartswith',
+        'customer__last_name__istartswith',
+        'product__title__istartswith'
+    ]
+    autocomplete_fields = ['customer', 'product']
+    list_display = ['id', 'customer', 'product', 'rating', 'is_updated']
+    list_filter = ['rating', 'created_at', 'updated_at', 'is_updated']
+    list_per_page = 10
