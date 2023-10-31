@@ -39,3 +39,25 @@ class Address(models.Model):
 
     def __str__(self) -> str:
         return f'{self.street} - {self.city}'
+
+
+class Promotion(models.Model):
+    title = models.CharField(
+        max_length=255,
+        validators=[MinLengthValidator(3)]
+    )
+    slug = models.SlugField()
+    description = models.TextField()
+    discount = models.FloatField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+
+    def __str__(self) -> str:
+        return self.title
+
+    class Meta:
+        ordering = ['title', 'end_date', 'start_date']
+        indexes = [
+            models.Index(fields=['title', 'discount']),
+            models.Index(fields=['start_date', 'end_date'])
+        ]
