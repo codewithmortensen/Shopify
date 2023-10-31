@@ -208,7 +208,7 @@ class CartItem(models.Model):
     quantity = models.PositiveSmallIntegerField()
 
     def __str__(self) -> str:
-        return f'{self.product.title - {self.quantity}}'
+        return f'{self.product.title} - {self.quantity}'
 
 
 class Order(models.Model):
