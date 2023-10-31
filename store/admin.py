@@ -19,7 +19,10 @@ class AddressInline(admin.TabularInline):
 @admin.register(models.Customer)
 class CustomerAdmin(admin.ModelAdmin):
     autocomplete_fields = ['customer']
-    search_fields = ['first_name__istartswith', 'last_name__istartswith']
+    search_fields = [
+        'customer__first_name__istartswith',
+        'customer__last_name__istartswith'
+    ]
     list_display = [
         'customer_id', 'first_name', 'last_name',
         'email', 'membership', 'order_count'
