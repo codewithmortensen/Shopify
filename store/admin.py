@@ -157,3 +157,32 @@ class StockAdmin(admin.ModelAdmin):
         message = f'you have successfully updated {
             updated_count} product stock '
         self.message_user(request, message)
+
+
+class OrderItemAdminInline(admin.TabularInline):
+    autocomplete_fields = ['product']
+    model = models.OrderItem
+    min_num = 1
+    extra = 0
+
+
+@admin.register(models.Order)
+class OrderAdmin(admin.ModelAdmin):
+    search_fields = [
+        'customer__first_name__istartswith',
+        'customer__first_name__istartswith'
+    ]
+    list_display = ['id', 'customer', 'order_status', 'payment_status']
+    list_editable = ['order_status', 'payment_status']
+    list_filter = ['payment_status', 'order_status', 'placed_at']
+    autocomplete_fields = ['customer']
+    actions = ['payment_complete']
+    inlines = [OrderItemAdminInline]
+
+    @admin.action(description='payment completed')
+    def payment_complete(self, request, queryset: QuerySet):
+        updated_count = queryset.update(payment_status='C')
+        placeholder = 'orders' if updated_count > 1 else 'order'
+        message = f'you have successfully mark {
+            updated_count} {placeholder} as complete'
+        self.message_user(request, message)
