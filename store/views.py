@@ -25,3 +25,10 @@ class CollectionViewSet(ModelViewSet):
         if self.request.method == 'GET':
             return [AllowAny()]
         return [permissions.ShopifyModelPermission()]
+
+
+class PromotionViewSet(ModelViewSet):
+    queryset = models.Promotion.objects.all()
+    serializer_class = serializers.PromotionSerializer
+
+    permission_classes = [permissions.DjangoModelPermissions]

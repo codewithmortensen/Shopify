@@ -80,6 +80,10 @@ class Promotion(models.Model):
             models.Index(fields=['start_date', 'end_date'])
         ]
 
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.title)
+        super(Promotion, self).save(*args, **kwargs)
+
 
 class Collection(models.Model):
     title = models.CharField(
