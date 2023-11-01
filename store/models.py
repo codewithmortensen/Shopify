@@ -1,9 +1,11 @@
+from collections.abc import Iterable
 from django.db import models
 from django.core.validators import MinLengthValidator, MinValueValidator
 from Shopify.settings import AUTH_USER_MODEL
 from decimal import Decimal
 from django.utils import timezone
 from django.contrib import admin
+from django.utils.text import slugify
 from uuid import uuid4
 
 
@@ -94,6 +96,10 @@ class Collection(models.Model):
 
     class Meta:
         ordering = ['title']
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.title)
+        super(Collection, self).save(*args, **kwargs)
 
 
 class Product(models.Model):
