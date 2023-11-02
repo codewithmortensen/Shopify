@@ -142,6 +142,10 @@ class Product(models.Model):
 
         return self.price
 
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.title)
+        super(Product, self).save(*args, **kwargs)
+
     class Meta:
         ordering = ['title', 'price']
         indexes = [

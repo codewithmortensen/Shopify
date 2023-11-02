@@ -69,3 +69,35 @@ class PromotionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(errors)
 
         return super().update(instance, validated_data)
+
+
+class SimpleCollection(serializers.ModelSerializer):
+    class Meta:
+        model = models.Collection
+        fields = ['id', 'title']
+
+
+class SimplePromotionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Promotion
+        fields = ['id', 'title', 'discount']
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    slug = serializers.SlugField()
+    collection = SimpleCollection()
+    promotions = SimplePromotionSerializer(many=True)
+
+    class Meta:
+        model = models.Product
+        fields = [
+            'id', 'title', 'slug',  'description',
+            'price', 'new_price', 'last_update',
+            'collection', 'promotions', 'last_update'
+        ]
+
+
+class CreateProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Product
+        fields = ['title', 'price', 'description', 'collection', 'promotions']
