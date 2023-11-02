@@ -102,8 +102,10 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def get_status(self, product: models.Product):
         if not hasattr(product, 'stock') or product.stock.quantity_in_stock == 0:
-            return 'Out of Stock'
-        return 'In Stock'
+            return {"in_stock": False, 'stock_level': None}
+
+        out_put = 'Ok' if product.stock.quantity_in_stock > product.stock.threshold else 'Low'
+        return {'in_stock': True, 'stock_level': out_put}
 
 
 class CreateProductSerializer(serializers.ModelSerializer):
