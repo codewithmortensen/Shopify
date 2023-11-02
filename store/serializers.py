@@ -101,3 +101,30 @@ class CreateProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Product
         fields = ['title', 'price', 'description', 'collection', 'promotions']
+
+
+class StockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Stock
+        fields = ['product_id', 'quantity_in_stock', 'threshold']
+
+
+class CreateStockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Stock
+        fields = ['quantity_in_stock', 'threshold']
+
+    def save(self, **kwargs):
+        product_id = self.context['product_id']
+        quantity = self.validated_data['quantity_in_stock']
+        threshold = self.validated_data['threshold']
+        try:
+            stock = models.Stock.objects.get(product_id=product_id)
+            stock.quantity_in_stock = quantity
+            stock.threshold = threshold
+            stock.save()
+            self.instance = stock
+        except models.Stock.DoesNotExist:
+            self.instance = models.Stock.objects.create(
+                product_id=product_id, **self.validated_data)
+        return self.instance

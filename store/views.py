@@ -52,3 +52,22 @@ class ProductViewSet(ModelViewSet):
         if models.OrderItem.objects.filter(product_id=self.kwargs['pk']).count() > 0:
             return Response({'error': 'this Product con not be deleted'}, status=status.HTTP_403_FORBIDDEN)
         return super().destroy(request, *args, **kwargs)
+
+
+class StockViewSet(ModelViewSet):
+    def get_queryset(self):
+        return models.Stock.objects.filter(product_id=self.kwargs['product_pk'])
+
+    def get_serializer_class(self):
+        methods = ['POST', 'PUT', 'PATCH']
+        if self.request.method in methods:
+            return serializers.CreateStockSerializer
+        return serializers.StockSerializer
+
+    def get_serializer_context(self):
+        return {'product_id': self.kwargs['product_pk']}
+
+    def get_permissions(self):
+        if self.request.method in SAFE_METHODS:
+            return [AllowAny()]
+        return [permissions.ShopifyModelPermission()]
