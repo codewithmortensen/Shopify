@@ -14,10 +14,21 @@ stock_router = routers.NestedDefaultRouter(
     lookup='product'
 )
 
+review_router = routers.NestedDefaultRouter(
+    router,
+    'products',
+    lookup='product'
+)
 
+review_router.register(
+    'reviews',
+    views.ReviewViewSet,
+    basename='product-review'
+)
 stock_router.register('stock', views.StockViewSet, basename='product-stock')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('', include(stock_router.urls))
+    path('', include(stock_router.urls)),
+    path('', include(review_router.urls))
 ]

@@ -135,3 +135,46 @@ class CreateStockSerializer(serializers.ModelSerializer):
             self.instance = models.Stock.objects.create(
                 product_id=product_id, **self.validated_data)
         return self.instance
+
+
+class SimpleCustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Customer
+        fields = ['customer_id', 'first_name', 'last_name', 'membership']
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    customer = SimpleCustomerSerializer()
+
+    class Meta:
+        model = models.Review
+        fields = [
+            'id', 'customer', 'rating',
+            'description', 'created_at', 'is_updated', 'updated_at'
+        ]
+
+
+class CreateReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Review
+        fields = ['rating', 'description']
+
+    def create(self, validated_data):
+        user_id = self.context['user_id']
+        product_id = self.context['product_id']
+        return models.Review.objects.create(customer_id=user_id, product_id=product_id, **validated_data)
+
+
+class UpdateReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Review
+        fields = ['rating', 'description']
+
+    def update(self, instance: models.Review, validated_data):
+        instance.is_updated = True
+        instance.updated_at = timezone.now()
+        instance.rating = validated_data.get('rating', instance.rating)
+        instance.description = validated_data.get(
+            'description', instance.description)
+
+        return super().update(instance, validated_data)

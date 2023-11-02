@@ -1,7 +1,7 @@
 from django.db.models.aggregates import Count
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, SAFE_METHODS
+from rest_framework.permissions import AllowAny, SAFE_METHODS, IsAuthenticated
 from rest_framework import status
 from . import models, serializers, permissions
 
@@ -71,3 +71,33 @@ class StockViewSet(ModelViewSet):
         if self.request.method in SAFE_METHODS:
             return [AllowAny()]
         return [permissions.ShopifyModelPermission()]
+
+
+class ReviewViewSet(ModelViewSet):
+    http_method_names = ['get', 'post', 'patch', 'head', 'options', 'delete']
+
+    def get_queryset(self):
+        return models.Review.objects.filter(product_id=self.kwargs['product_pk'])
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return serializers.CreateReviewSerializer
+        if self.request.method == 'PATCH':
+            return serializers.UpdateReviewSerializer
+        return serializers.ReviewSerializer
+
+    def get_serializer_context(self):
+        user_id = self.request.user.id
+        return {
+            'user_id': user_id,
+            'product_id': self.kwargs['product_pk']
+        }
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        if self.request.method == 'PATCH':
+            return [permissions.IsReviewOwner()]
+        if self.request.method == 'DELETE':
+            return [permissions.ShopifyModelPermission()]
+        return [AllowAny()]
