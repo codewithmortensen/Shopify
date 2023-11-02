@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
+from django.db.models.aggregates import Avg
 from . import models
 
 
@@ -87,13 +88,14 @@ class ProductSerializer(serializers.ModelSerializer):
     slug = serializers.SlugField()
     collection = SimpleCollection()
     promotions = SimplePromotionSerializer(many=True)
+    num_reviews = serializers.IntegerField()
 
     class Meta:
         model = models.Product
         fields = [
             'id', 'title', 'slug',  'description',
             'price', 'new_price', 'last_update',
-            'collection', 'promotions', 'status', 'last_update'
+            'collection', 'promotions', 'status', 'num_reviews',  'last_update'
         ]
 
     status = serializers.SerializerMethodField(method_name='get_status')
