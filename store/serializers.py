@@ -93,8 +93,15 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'slug',  'description',
             'price', 'new_price', 'last_update',
-            'collection', 'promotions', 'last_update'
+            'collection', 'promotions', 'status', 'last_update'
         ]
+
+    status = serializers.SerializerMethodField(method_name='get_status')
+
+    def get_status(self, product: models.Product):
+        if not hasattr(product, 'stock') or product.stock.quantity_in_stock == 0:
+            return 'Out of Stock'
+        return 'In Stock'
 
 
 class CreateProductSerializer(serializers.ModelSerializer):
