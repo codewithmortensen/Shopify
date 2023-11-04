@@ -16,6 +16,8 @@ setuptools = "*"
 drf-nested-routers = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-django = "*"
 
 [requires]
 python_version = "3.11"

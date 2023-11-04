@@ -22,7 +22,7 @@ class CollectionViewSet(ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
     def get_permissions(self):
-        if self.request.method == SAFE_METHODS:
+        if self.request.method in SAFE_METHODS:
             return [AllowAny()]
         return [permissions.ShopifyModelPermission()]
 
