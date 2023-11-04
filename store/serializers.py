@@ -5,9 +5,11 @@ from . import models
 
 
 class SimpleProductSerializer(serializers.ModelSerializer):
+    price = serializers.DecimalField(max_digits=6, decimal_places=3, source='new_price')
+
     class Meta:
         model = models.Product
-        fields = ['id', 'title', 'price', 'new_price']
+        fields = ['id', 'title', 'price']
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -33,9 +35,10 @@ class PromotionSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Promotion
         fields = [
-            'id', 'title', 'slug',  'description',
+            'id', 'title', 'slug', 'description',
             'discount', 'start_date', 'end_date',
         ]
+
     now = timezone.now()
 
     def create(self, validated_data):
@@ -93,14 +96,15 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Product
         fields = [
-            'id', 'title', 'slug',  'description',
+            'id', 'title', 'slug', 'description',
             'price', 'new_price', 'last_update',
-            'collection', 'promotions', 'status', 'num_reviews',  'last_update'
+            'collection', 'promotions', 'status', 'num_reviews', 'last_update'
         ]
 
     status = serializers.SerializerMethodField(method_name='get_status')
 
-    def get_status(self, product: models.Product):
+    @staticmethod
+    def get_status(product: models.Product):
         if not hasattr(product, 'stock') or product.stock.quantity_in_stock == 0:
             return {"in_stock": False, 'stock_level': None}
 
@@ -161,7 +165,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 class CreateReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Review
-        fields = ['rating', 'description']
+        fields = ['id', 'rating', 'description']
 
     def create(self, validated_data):
         user_id = self.context['user_id']
@@ -182,3 +186,78 @@ class UpdateReviewSerializer(serializers.ModelSerializer):
             'description', instance.description)
 
         return super().update(instance, validated_data)
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    product = SimpleProductSerializer()
+
+    class Meta:
+        model = models.CartItem
+        fields = ['id', 'product', 'quantity', 'sub_total']
+
+    sub_total = serializers.SerializerMethodField(method_name='get_sub_total')
+
+    @staticmethod
+    def get_sub_total(items: models.CartItem):
+        return items.quantity * items.product.new_price
+
+
+class CartSerializer(serializers.ModelSerializer):
+    items = CartItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = models.Cart
+        fields = ['id', 'created_at', 'items', 'total']
+
+    total = serializers.SerializerMethodField(method_name='get_total')
+
+    @staticmethod
+    def get_total(cart: models.Cart):
+        return sum([item.product.new_price * item.quantity for item in cart.items.all()])
+
+
+class CreateCartItemSerializer(serializers.ModelSerializer):
+    product_id = serializers.IntegerField()
+
+    @staticmethod
+    def validate_product_id(product_id):
+        if not models.Product.objects.filter(pk=product_id).exists():
+            raise serializers.ValidationError('Product with the Given ID does not exist')
+        return product_id
+
+    @staticmethod
+    def validate_quantity(quantity):
+        if models.Product.objects.filter(stock__quantity_in_stock__lt=quantity):
+            raise serializers.ValidationError('quantity provided is greater than quantity in stock')
+        return quantity
+
+    class Meta:
+        model = models.CartItem
+        fields = ['product_id', 'quantity']
+
+    def save(self, **kwargs):
+        cart_id = self.context['cart_id']
+        product_id = self.validated_data['product_id']
+        quantity = self.validated_data['quantity']
+
+        try:
+            items = models.CartItem.objects.get(cart_id=cart_id, product_id=product_id)
+            items.quantity += quantity
+            items.save()
+            self.instance = items
+        except models.CartItem.DoesNotExist:
+            self.instance = models.CartItem.objects.create(cart_id=cart_id, **self.validated_data)
+
+        return self.instance
+
+
+class UpdateCartItemSerializer(serializers.ModelSerializer):
+    @staticmethod
+    def validate_quantity(quantity):
+        if models.Product.objects.filter(stock__quantity_in_stock__lt=quantity):
+            raise serializers.ValidationError('quantity provided is greater than quantity in stock')
+        return quantity
+
+    class Meta:
+        model = models.CartItem
+        fields = ['quantity']

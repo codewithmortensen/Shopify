@@ -1,8 +1,9 @@
 from django.db.models.aggregates import Count, Avg
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, SAFE_METHODS, IsAuthenticated
 from rest_framework import status
+from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, DestroyModelMixin
 from . import models, serializers, permissions
 
 
@@ -104,3 +105,25 @@ class ReviewViewSet(ModelViewSet):
         if self.request.method == 'DELETE':
             return [permissions.ShopifyModelPermission()]
         return [AllowAny()]
+
+
+class CartViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin):
+    queryset = models.Cart.objects.all()
+    serializer_class = serializers.CartSerializer
+
+
+class CartItemViewSet(ModelViewSet):
+    http_method_names = ['get', 'post', 'patch', 'head', 'options', 'delete']
+
+    def get_queryset(self):
+        return models.CartItem.objects.filter(cart_id=self.kwargs['cart_pk'])
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return serializers.CreateCartItemSerializer
+        if self.request.method == 'PATCH':
+            return serializers.UpdateCartItemSerializer
+        return serializers.CartItemSerializer
+
+    def get_serializer_context(self):
+        return {'cart_id': self.kwargs['cart_pk']}

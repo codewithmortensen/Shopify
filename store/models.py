@@ -137,7 +137,7 @@ class Product(models.Model):
 
         if self.collection and self.collection.promotion:
             collection_promotion = self.collection.promotion
-            if collection_promotion.start_date <= now and collection_promotion.end_date >= now:
+            if collection_promotion.start_date <= now <= collection_promotion.end_date:
                 return self.price * Decimal(1 - collection_promotion.discount)
 
         return self.price
@@ -219,7 +219,7 @@ class CartItem(models.Model):
         Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(
         Product, on_delete=models.CASCADE, related_name='item')
-    quantity = models.PositiveSmallIntegerField()
+    quantity = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
 
     def __str__(self) -> str:
         return f'{self.product.title} - {self.quantity}'
