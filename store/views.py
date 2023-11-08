@@ -126,13 +126,14 @@ class ReviewViewSet(ModelViewSet):
         }
 
     def get_permissions(self):
+        if self.request.method in SAFE_METHODS:
+            return [AllowAny()]
         if self.request.method == 'POST':
             return [IsAuthenticated()]
         if self.request.method == 'PATCH':
             return [permissions.IsReviewOwner()]
-        if self.request.method == 'DELETE':
-            return [permissions.ShopifyModelPermission()]
-        return [AllowAny()]
+
+        return [permissions.ShopifyModelPermission()]
 
 
 class CartViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin):

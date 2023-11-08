@@ -9,4 +9,7 @@ class ShopifyModelPermission(DjangoModelPermissions):
 class IsReviewOwner(BasePermission):
     def has_object_permission(self, request, view, obj):
         user = request.user
+        if not hasattr(user, 'customer'):
+            return False
+
         return bool(request.user.customer == obj.customer)
