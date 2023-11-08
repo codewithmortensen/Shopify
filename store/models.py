@@ -200,7 +200,10 @@ class Review(models.Model):
         return self.rating
 
     class Meta:
-        ordering = ['created_at', 'is_updated', 'updated_at']
+        ordering = [
+            'created_at', 'is_updated',
+            'updated_at', 'customer__customer__first_name', 'customer__customer__last_name'
+        ]
         indexes = [
             models.Index(fields=['product', 'customer', 'rating']),
         ]

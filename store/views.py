@@ -3,7 +3,8 @@ from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, SAFE_METHODS, IsAuthenticated
 from rest_framework import status
-from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, DestroyModelMixin
+from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin
+from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from . import models, serializers, permissions, filters
 
@@ -11,6 +12,17 @@ from . import models, serializers, permissions, filters
 class CustomerViewSet(ModelViewSet):
     http_method_names = ['get', 'patch', 'head', 'options']
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = [
+        'customer__id',
+        'customer__first_name',
+        'customer__last_name'
+    ]
+
+    ordering_fields = [
+        'membership', 'birth_date',
+        'customer__email', 'customer__first_name', 'customer__last_name'
+    ]
 
     def get_queryset(self):
         user = self.request.user
@@ -34,6 +46,9 @@ class CustomerViewSet(ModelViewSet):
 
 
 class CollectionViewSet(ModelViewSet):
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ['title', 'slug']
+    ordering_fields = ['title', 'products_count']
     queryset = models.Collection.objects.all().annotate(
         products_count=Count('product')
     )
@@ -62,8 +77,14 @@ class PromotionViewSet(ModelViewSet):
 
 
 class ProductViewSet(ModelViewSet):
-    filter_backends = [DjangoFilterBackend]
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ['title', 'slug', 'collection__title']
     filterset_class = filters.ProductFilter
+    ordering_fields = [
+        'title', 'price',
+        'stock__quantity_in_stock', 'last_update'
+    ]
     http_method_names = ['get', 'post', 'patch', 'head', 'options', 'delete']
     queryset = models.Product.objects.select_related('collection__promotion') \
         .prefetch_related('promotions').select_related('stock').all().annotate(
@@ -106,6 +127,10 @@ class StockViewSet(ModelViewSet):
 
 
 class ReviewViewSet(ModelViewSet):
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = [
+        'rating', 'created_at', 'is_updated', 'updated_at',
+        'customer__customer__first_name', 'customer__customer__last_name']
     http_method_names = ['get', 'post', 'patch', 'head', 'options', 'delete']
 
     def get_queryset(self):
@@ -159,6 +184,12 @@ class CartItemViewSet(ModelViewSet):
 
 
 class OrderViewSet(ModelViewSet):
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    ordering_fields = ['order_status', 'payment_status', 'placed_at']
+    search_fields = [
+        'customer__customer__first_name',
+        'customer__customer__last_name'
+    ]
     http_method_names = ['get', 'patch', 'post', 'head', 'options']
 
     def get_queryset(self):
