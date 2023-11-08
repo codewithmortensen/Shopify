@@ -40,7 +40,7 @@ class ProductViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = filters.ProductFilter
     http_method_names = ['get', 'post', 'patch', 'head', 'options', 'delete']
-    queryset = models.Product.objects.select_related('collection__promotion')\
+    queryset = models.Product.objects.select_related('collection__promotion') \
         .prefetch_related('promotions').select_related('stock').all().annotate(
         num_reviews=Count('reviews'),
     )
@@ -130,3 +130,42 @@ class CartItemViewSet(ModelViewSet):
 
     def get_serializer_context(self):
         return {'cart_id': self.kwargs['cart_pk']}
+
+
+class OrderViewSet(ModelViewSet):
+    http_method_names = ['get', 'patch', 'post', 'head', 'options']
+
+    def get_queryset(self):
+        if not self.request.user.is_staff:
+            return models.Order.objects\
+                .select_related('customer__customer')\
+                .prefetch_related('item__product__promotions')\
+                .prefetch_related('item__product__collection')\
+                .filter(customer_id=self.request.user.id)
+        return models.Order.objects\
+            .select_related('customer__customer')\
+            .prefetch_related('item__product__promotions')\
+            .prefetch_related('item__product__collection')\
+            .all()
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return serializers.CreateOrderSerializer
+        if self.request.method == 'PATCH':
+            return serializers.UpdateOrderSerializer
+        return serializers.OrderSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = serializers.CreateOrderSerializer(
+            data=self.request.data,
+            context={'user_id': self.request.user.id}
+        )
+        serializer.is_valid(raise_exception=True)
+        order = serializer.save()
+        serializer = serializers.OrderSerializer(order)
+        return Response(serializer.data)
+
+    def get_permissions(self):
+        if self.request.method in ['GET', 'POST', 'HEAD', 'OPTIONS']:
+            return [IsAuthenticated()]
+        return [permissions.ShopifyModelPermission()]

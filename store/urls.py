@@ -31,6 +31,7 @@ stock_router.register('stock', views.StockViewSet, basename='product-stock')
 router.register('carts', views.CartViewSet, basename='cart')
 item_router = routers.NestedDefaultRouter(router, 'carts', lookup='cart')
 item_router.register('items', views.CartItemViewSet, basename='cart-item')
+router.register('orders', views.OrderViewSet, basename='order')
 urlpatterns = [
     path('', include(router.urls)),
     path('', include(stock_router.urls)),

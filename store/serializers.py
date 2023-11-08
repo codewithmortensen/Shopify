@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
+from django.db import transaction
 from . import models
 
 
@@ -273,4 +274,69 @@ class UpdateCartItemSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(error)
 
         return super().update(instance, validated_data)
-    
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    customer = SimpleCustomerSerializer()
+    item = CartItemSerializer(many=True)
+
+    class Meta:
+        model = models.Order
+        fields = ['id', 'placed_at', 'order_status', 'payment_status', 'customer', 'item', 'total']
+
+    total = serializers.SerializerMethodField(method_name='get_total')
+
+    @staticmethod
+    def get_total(order: models.Order):
+        return sum([item.product.new_price * item.quantity for item in order.item.all()])
+
+
+class CreateOrderSerializer(serializers.Serializer):
+    cart_id = serializers.UUIDField()
+
+    @staticmethod
+    def validate_cart_id(cart_id):
+        if not models.Cart.objects.filter(pk=cart_id).exists():
+            raise serializers.ValidationError('Cart Does Not Exist')
+        if models.CartItem.objects.filter(cart_id=cart_id).count() == 0:
+            raise serializers.ValidationError('Empty Cart')
+        return cart_id
+
+    def save(self, **kwargs):
+        with (transaction.atomic()):
+            cart = self.validated_data['cart_id']
+            user_id = self.context['user_id']
+            customer = models.Customer.objects.get(customer_id=user_id)
+            order = models.Order.objects.create(customer=customer)
+
+            cart_item = models.CartItem.objects.prefetch_related('product').filter(cart=cart)
+            items = [models.OrderItem(
+                order=order,
+                product=item.product,
+                quantity=item.quantity,
+                unit_price=item.product.new_price)
+                for item in cart_item
+            ]
+
+            models.OrderItem.objects\
+                .select_related('product__collection__promotion')\
+                .prefetch_related('product__collection__promotions')\
+                .bulk_create(items)
+
+            for instance in items:
+                product_stock = instance.product.stock.quantity_in_stock
+                quantity = instance.quantity
+                if quantity > product_stock:
+                    raise serializers.ValidationError({'error': 'Not enough instance of the product In stock'})
+
+                models.Stock.objects.select_related('product').filter(product_id=instance.product.pk)\
+                    .update(quantity_in_stock=product_stock - quantity)
+
+            models.Cart.objects.filter(pk=cart).delete()
+            return order
+
+
+class UpdateOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Order
+        fields = ['order_status', 'payment_status']
