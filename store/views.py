@@ -8,6 +8,31 @@ from django_filters.rest_framework import DjangoFilterBackend
 from . import models, serializers, permissions, filters
 
 
+class CustomerViewSet(ModelViewSet):
+    http_method_names = ['get', 'patch', 'head', 'options']
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_staff:
+            return models.Customer.objects.select_related('customer').filter(customer_id=user.id).annotate(
+                order_count=Count('orders')
+            )
+
+        return models.Customer.objects.select_related('customer').all().annotate(
+            order_count=Count('orders')
+        )
+
+    def get_serializer_class(self):
+        if self.request.method == 'PATCH' and self.request.user.is_staff:
+            return serializers.AdminUpdateCustomerSerializer
+
+        if self.request.method == 'PATCH':
+            return serializers.UpdateCustomerSerializer
+
+        return serializers.CustomerSerializer
+
+
 class CollectionViewSet(ModelViewSet):
     queryset = models.Collection.objects.all().annotate(
         products_count=Count('product')

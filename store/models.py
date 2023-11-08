@@ -219,7 +219,8 @@ class CartItem(models.Model):
         Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(
         Product, on_delete=models.CASCADE, related_name='item')
-    quantity = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
+    quantity = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1)])
 
     def __str__(self) -> str:
         return f'{self.product.title} - {self.quantity}'

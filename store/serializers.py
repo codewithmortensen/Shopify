@@ -4,8 +4,32 @@ from django.db import transaction
 from . import models
 
 
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Customer
+        fields = [
+            'customer_id', 'first_name', 'last_name', 'birth_date', 'phone',
+            'email', 'membership', 'order_count'
+        ]
+
+    order_count = serializers.IntegerField()
+
+
+class UpdateCustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Customer
+        fields = ['birth_date', 'phone']
+
+
+class AdminUpdateCustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Customer
+        fields = ['birth_date', 'phone', 'membership']
+
+
 class SimpleProductSerializer(serializers.ModelSerializer):
-    price = serializers.DecimalField(max_digits=6, decimal_places=3, source='new_price')
+    price = serializers.DecimalField(
+        max_digits=6, decimal_places=3, source='new_price')
 
     class Meta:
         model = models.Product
@@ -19,8 +43,10 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Collection
-        fields = ['id', 'title', 'slug', 'featured_product',
-                  'promotion', 'products_count']
+        fields = [
+            'id', 'title', 'slug', 'featured_product',
+            'promotion', 'products_count'
+        ]
 
 
 class CreateCollectionSerializer(serializers.ModelSerializer):
@@ -115,7 +141,8 @@ class ProductSerializer(serializers.ModelSerializer):
 class CreateProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Product
-        fields = ['id', 'title', 'price', 'description', 'collection', 'promotions']
+        fields = ['id', 'title', 'price',
+                  'description', 'collection', 'promotions']
 
 
 class StockSerializer(serializers.ModelSerializer):
@@ -223,7 +250,8 @@ class CreateCartItemSerializer(serializers.ModelSerializer):
     def validate_product_id(product_id):
         product = models.Product.objects.filter(pk=product_id)
         if not product.exists():
-            raise serializers.ValidationError('Product with the Given ID does not exist')
+            raise serializers.ValidationError(
+                'Product with the Given ID does not exist')
         try:
             var: models.Stock = product.first().stock
             if var.quantity_in_stock <= 0:
@@ -249,12 +277,14 @@ class CreateCartItemSerializer(serializers.ModelSerializer):
             if quantity > stock.quantity_in_stock:
                 raise serializers.ValidationError(error)
 
-            items = models.CartItem.objects.get(cart_id=cart_id, product_id=product_id)
+            items = models.CartItem.objects.get(
+                cart_id=cart_id, product_id=product_id)
             items.quantity += quantity
             items.save()
             self.instance = items
         except models.CartItem.DoesNotExist:
-            self.instance = models.CartItem.objects.create(cart_id=cart_id, **self.validated_data)
+            self.instance = models.CartItem.objects.create(
+                cart_id=cart_id, **self.validated_data)
 
         return self.instance
 
@@ -282,7 +312,8 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Order
-        fields = ['id', 'placed_at', 'order_status', 'payment_status', 'customer', 'item', 'total']
+        fields = ['id', 'placed_at', 'order_status',
+                  'payment_status', 'customer', 'item', 'total']
 
     total = serializers.SerializerMethodField(method_name='get_total')
 
@@ -309,7 +340,8 @@ class CreateOrderSerializer(serializers.Serializer):
             customer = models.Customer.objects.get(customer_id=user_id)
             order = models.Order.objects.create(customer=customer)
 
-            cart_item = models.CartItem.objects.prefetch_related('product').filter(cart=cart)
+            cart_item = models.CartItem.objects.prefetch_related(
+                'product').filter(cart=cart)
             items = [models.OrderItem(
                 order=order,
                 product=item.product,
@@ -327,7 +359,8 @@ class CreateOrderSerializer(serializers.Serializer):
                 product_stock = instance.product.stock.quantity_in_stock
                 quantity = instance.quantity
                 if quantity > product_stock:
-                    raise serializers.ValidationError({'error': 'Not enough instance of the product In stock'})
+                    raise serializers.ValidationError(
+                        {'error': 'Not enough instance of the product In stock'})
 
                 models.Stock.objects.select_related('product').filter(product_id=instance.product.pk)\
                     .update(quantity_in_stock=product_stock - quantity)
