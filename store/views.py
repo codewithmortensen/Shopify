@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, SAFE_METHODS, IsAuthenticated
 from rest_framework import status
 from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, DestroyModelMixin
-from . import models, serializers, permissions
+from django_filters.rest_framework import DjangoFilterBackend
+from . import models, serializers, permissions, filters
 
 
 class CollectionViewSet(ModelViewSet):
@@ -36,10 +37,12 @@ class PromotionViewSet(ModelViewSet):
 
 
 class ProductViewSet(ModelViewSet):
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = filters.ProductFilter
     http_method_names = ['get', 'post', 'patch', 'head', 'options', 'delete']
-    queryset = models.Product.objects.prefetch_related('promotions').all().annotate(
+    queryset = models.Product.objects.select_related('collection__promotion')\
+        .prefetch_related('promotions').select_related('stock').all().annotate(
         num_reviews=Count('reviews'),
-
     )
 
     def get_serializer_class(self):

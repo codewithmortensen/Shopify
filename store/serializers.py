@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from django.utils import timezone
-from django.db.models.aggregates import Avg
 from . import models
 
 
@@ -109,7 +108,7 @@ class ProductSerializer(serializers.ModelSerializer):
             return {"in_stock": False, 'stock_level': None}
 
         out_put = 'Ok' if product.stock.quantity_in_stock > product.stock.threshold else 'Low'
-        return {'in_stock': True, 'stock_level': out_put}
+        return {'in_stock': True, 'stock_level': out_put, 'stock': product.stock.quantity_in_stock}
 
 
 class CreateProductSerializer(serializers.ModelSerializer):
@@ -221,15 +220,18 @@ class CreateCartItemSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def validate_product_id(product_id):
-        if not models.Product.objects.filter(pk=product_id).exists():
+        product = models.Product.objects.filter(pk=product_id)
+        if not product.exists():
             raise serializers.ValidationError('Product with the Given ID does not exist')
-        return product_id
+        try:
+            var: models.Stock = product.first().stock
+            if var.quantity_in_stock <= 0:
+                raise serializers.ValidationError('Error')
+            return product_id
 
-    @staticmethod
-    def validate_quantity(quantity):
-        if models.Product.objects.filter(stock__quantity_in_stock__lt=quantity):
-            raise serializers.ValidationError('quantity provided is greater than quantity in stock')
-        return quantity
+        except Exception:
+            message = 'Product has no stock'
+            raise serializers.ValidationError(message)
 
     class Meta:
         model = models.CartItem
@@ -241,6 +243,11 @@ class CreateCartItemSerializer(serializers.ModelSerializer):
         quantity = self.validated_data['quantity']
 
         try:
+            stock = models.Stock.objects.get(pk=product_id)
+            error = {'error': 'Quantity provided is greater than quantity in stock'}
+            if quantity > stock.quantity_in_stock:
+                raise serializers.ValidationError(error)
+
             items = models.CartItem.objects.get(cart_id=cart_id, product_id=product_id)
             items.quantity += quantity
             items.save()
@@ -252,12 +259,18 @@ class CreateCartItemSerializer(serializers.ModelSerializer):
 
 
 class UpdateCartItemSerializer(serializers.ModelSerializer):
-    @staticmethod
-    def validate_quantity(quantity):
-        if models.Product.objects.filter(stock__quantity_in_stock__lt=quantity):
-            raise serializers.ValidationError('quantity provided is greater than quantity in stock')
-        return quantity
-
     class Meta:
         model = models.CartItem
         fields = ['quantity']
+
+    def update(self, instance: models.CartItem, validated_data):
+        product_id = validated_data.get('product_id', instance.product.pk)
+
+        quantity = validated_data.get('quantity', instance.quantity)
+        stock = models.Stock.objects.get(pk=product_id)
+        error = {'error': 'Quantity provided is greater than quantity in stock'}
+        if stock.quantity_in_stock < quantity:
+            raise serializers.ValidationError(error)
+
+        return super().update(instance, validated_data)
+    
