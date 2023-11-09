@@ -124,7 +124,7 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'slug', 'description',
             'price', 'new_price', 'last_update',
-            'collection', 'promotions', 'status', 'num_reviews', 'last_update'
+            'collection', 'promotions', 'status', 'num_reviews', 'last_update', 'average_rating'
         ]
 
     status = serializers.SerializerMethodField(method_name='get_status')
@@ -136,6 +136,17 @@ class ProductSerializer(serializers.ModelSerializer):
 
         out_put = 'Ok' if product.stock.quantity_in_stock > product.stock.threshold else 'Low'
         return {'in_stock': True, 'stock_level': out_put, 'stock': product.stock.quantity_in_stock}
+
+    average_rating = serializers.SerializerMethodField(method_name='get_average_reviews')
+
+    @staticmethod
+    def get_average_reviews(product: models.Product):
+        reviews = [float(review.rating) for review in product.reviews.all()]
+        if len(reviews):
+            average_review = sum(reviews) / len(reviews)
+            rounded_average = min([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5], key=lambda x: abs(x - average_review))
+            return rounded_average
+        return 0
 
 
 class CreateProductSerializer(serializers.ModelSerializer):
@@ -350,9 +361,9 @@ class CreateOrderSerializer(serializers.Serializer):
                 for item in cart_item
             ]
 
-            models.OrderItem.objects\
-                .select_related('product__collection__promotion')\
-                .prefetch_related('product__collection__promotions')\
+            models.OrderItem.objects \
+                .select_related('product__collection__promotion') \
+                .prefetch_related('product__collection__promotions') \
                 .bulk_create(items)
 
             for instance in items:
@@ -362,7 +373,7 @@ class CreateOrderSerializer(serializers.Serializer):
                     raise serializers.ValidationError(
                         {'error': 'Not enough instance of the product In stock'})
 
-                models.Stock.objects.select_related('product').filter(product_id=instance.product.pk)\
+                models.Stock.objects.select_related('product').filter(product_id=instance.product.pk) \
                     .update(quantity_in_stock=product_stock - quantity)
 
             models.Cart.objects.filter(pk=cart).delete()
