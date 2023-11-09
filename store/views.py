@@ -86,9 +86,12 @@ class ProductViewSet(ModelViewSet):
         'stock__quantity_in_stock', 'last_update'
     ]
     http_method_names = ['get', 'post', 'patch', 'head', 'options', 'delete']
-    queryset = models.Product.objects.select_related('collection__promotion') \
-        .prefetch_related('promotions').select_related('stock').all().annotate(
-        num_reviews=Count('reviews'),
+    queryset = models.Product.objects\
+        .select_related('collection__promotion') \
+        .prefetch_related('promotions')\
+        .select_related('stock')\
+        .prefetch_related('reviews__customer__customer')\
+        .all().annotate(num_reviews=Count('reviews'),
     )
 
     def get_serializer_class(self):
@@ -134,7 +137,7 @@ class ReviewViewSet(ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'head', 'options', 'delete']
 
     def get_queryset(self):
-        return models.Review.objects.filter(product_id=self.kwargs['product_pk'])
+        return models.Review.objects.select_related('customer__customer').filter(product_id=self.kwargs['product_pk'])
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
