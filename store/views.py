@@ -3,6 +3,7 @@ from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, SAFE_METHODS, IsAuthenticated
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin
 from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -44,6 +45,21 @@ class CustomerViewSet(ModelViewSet):
 
         return serializers.CustomerSerializer
 
+    @action(detail=False, methods=['GET', 'PATCH'], permission_classes=[IsAuthenticated])
+    def me(self, request):
+        customer = models.Customer.objects.select_related('customer')\
+            .filter(customer_id=request.user.id).annotate(
+            order_count=Count('orders')
+        ).first()
+        if request.method == 'GET':
+            serializer = serializers.CustomerSerializer(customer)
+            return Response(serializer.data)
+        if request.method == 'PATCH':
+            serializer = serializers.UpdateCustomerSerializer(customer, data=self.request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+
 
 class CollectionViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -77,7 +93,6 @@ class PromotionViewSet(ModelViewSet):
 
 
 class ProductViewSet(ModelViewSet):
-
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['title', 'slug', 'collection__title']
     filterset_class = filters.ProductFilter
@@ -86,13 +101,13 @@ class ProductViewSet(ModelViewSet):
         'stock__quantity_in_stock', 'last_update'
     ]
     http_method_names = ['get', 'post', 'patch', 'head', 'options', 'delete']
-    queryset = models.Product.objects\
+    queryset = models.Product.objects \
         .select_related('collection__promotion') \
-        .prefetch_related('promotions')\
-        .select_related('stock')\
-        .prefetch_related('reviews__customer__customer')\
+        .prefetch_related('promotions') \
+        .select_related('stock') \
+        .prefetch_related('reviews__customer__customer') \
         .all().annotate(num_reviews=Count('reviews'),
-    )
+                        )
 
     def get_serializer_class(self):
         if self.request.method in ['POST', 'PATCH']:
@@ -197,15 +212,15 @@ class OrderViewSet(ModelViewSet):
 
     def get_queryset(self):
         if not self.request.user.is_staff:
-            return models.Order.objects\
-                .select_related('customer__customer')\
-                .prefetch_related('item__product__promotions')\
-                .prefetch_related('item__product__collection')\
+            return models.Order.objects \
+                .select_related('customer__customer') \
+                .prefetch_related('item__product__promotions') \
+                .prefetch_related('item__product__collection') \
                 .filter(customer_id=self.request.user.id)
-        return models.Order.objects\
-            .select_related('customer__customer')\
-            .prefetch_related('item__product__promotions')\
-            .prefetch_related('item__product__collection')\
+        return models.Order.objects \
+            .select_related('customer__customer') \
+            .prefetch_related('item__product__promotions') \
+            .prefetch_related('item__product__collection') \
             .all()
 
     def get_serializer_class(self):

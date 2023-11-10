@@ -12,7 +12,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             'email', 'membership', 'order_count'
         ]
 
-    order_count = serializers.IntegerField()
+    order_count = serializers.IntegerField(read_only=True)
 
 
 class UpdateCustomerSerializer(serializers.ModelSerializer):
